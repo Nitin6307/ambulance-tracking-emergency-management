@@ -1,0 +1,101 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ambulance Live Location Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 750px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f4f7fb;
+        }
+        h2 { color: #17365d; }
+        #status {
+            padding: 12px;
+            background: #fff3cd;
+            border-radius: 6px;
+        }
+        #messages {
+            background: white;
+            padding: 15px;
+            min-height: 180px;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Ambulance Live Location Test</h2>
+
+<p id="status">Connecting...</p>
+
+<h3>Live Ambulance Updates</h3>
+<div id="messages">Waiting for location updates...</div>
+
+<script>
+    const status = document.getElementById("status");
+    const messages = document.getElementById("messages");
+
+    const socket = new WebSocket("ws://localhost:8080/ws");
+
+    socket.onopen = function () {
+        status.textContent = "WebSocket connected. Connecting to STOMP...";
+
+        socket.send(
+            "CONNECT\n" +
+            "accept-version:1.2\n" +
+            "heart-beat:0,0\n\n" +
+            "\0"
+        );
+    };
+
+    socket.onmessage = function (event) {
+        const data = event.data;
+
+        if (data.startsWith("CONNECTED")) {
+            status.textContent = "STOMP connected! Subscribing to ambulance updates...";
+
+            socket.send(
+                "SUBSCRIBE\n" +
+                "id:ambulance-subscription\n" +
+                "destination:/topic/ambulances\n" +
+                "ack:auto\n\n" +
+                "\0"
+            );
+
+            status.textContent = "Connected and subscribed. Waiting for GPS updates...";
+            return;
+        }
+
+        if (data.startsWith("MESSAGE")) {
+            const body = data.substring(data.indexOf("\n\n") + 2)
+                .replace(/\0$/, "");
+
+            try {
+                const ambulance = JSON.parse(body);
+                messages.textContent =
+                    JSON.stringify(ambulance, null, 2) +
+                    "\n\n" + messages.textContent;
+            } catch (error) {
+                messages.textContent = data + "\n\n" + messages.textContent;
+            }
+        }
+    };
+
+    socket.onerror = function () {
+        status.textContent = "WebSocket error. Check whether Spring Boot is running.";
+    };
+
+    socket.onclose = function () {
+        status.textContent = "Connection closed.";
+    };
+</script>
+
+</body>
+</html>
