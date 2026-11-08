@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import com.ambulance.management.dto.UserResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.access.prepost.PreAuthorize;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -76,5 +77,22 @@ public class UserController {
         return ResponseEntity.ok(
                 "Authenticated user: " + authentication.getName()
         );
+    }
+
+    @GetMapping("/drivers")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UserResponse>> getAllDrivers() {
+
+        List<UserResponse> drivers = userService.getAllDrivers()
+                .stream()
+                .map(user -> new UserResponse(
+                        user.getId(),
+                        user.getName(),
+                        user.getEmail(),
+                        user.getRole()
+                ))
+                .toList();
+
+        return ResponseEntity.ok(drivers);
     }
 }

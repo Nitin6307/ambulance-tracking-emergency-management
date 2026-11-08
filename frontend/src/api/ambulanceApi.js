@@ -10,6 +10,8 @@ const ambulanceApi = {
   // Get available ambulances
   getAvailable: () => api.get('/ambulances/available'),
 
+  getAllDrivers: () => api.get('/users/drivers'),
+
   // Add new ambulance
   create: (ambulanceData) => api.post('/ambulances', ambulanceData),
 

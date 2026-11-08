@@ -1,10 +1,14 @@
 
 import StatusBadge from '../common/StatusBadge'
+import Button from '../common/Button'
 
-function AmbulanceTable({ ambulances = [] }) {
+function AmbulanceTable({
+  ambulances = [],
+  onAssignDriver,
+}) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[650px] text-left text-sm">
+      <table className="w-full min-w-[800px] text-left text-sm">
 
         <thead className="border-b border-slate-700 text-slate-400">
           <tr>
@@ -13,6 +17,7 @@ function AmbulanceTable({ ambulances = [] }) {
             <th className="p-4">Driver</th>
             <th className="p-4">Status</th>
             <th className="p-4">Location</th>
+            <th className="p-4">Actions</th>
           </tr>
         </thead>
 
@@ -43,10 +48,25 @@ function AmbulanceTable({ ambulances = [] }) {
                   ? `${item.latitude}, ${item.longitude}`
                   : 'Location unavailable'}
               </td>
+
+              <td className="p-4">
+                {item.status === 'AVAILABLE' && (
+                  <Button
+                    onClick={() => onAssignDriver?.(item)}
+                  >
+                    Assign Driver
+                  </Button>
+                )}
+
+                {item.status !== 'AVAILABLE' && (
+                  <span className="text-slate-500">
+                    Unavailable
+                  </span>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
-
       </table>
 
       {ambulances.length === 0 && (

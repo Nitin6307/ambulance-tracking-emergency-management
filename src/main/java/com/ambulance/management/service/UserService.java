@@ -47,4 +47,11 @@ public class UserService {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
+
+    public List<User> getAllDrivers() {
+        return userRepository.findAll()
+                .stream()
+                .filter(user -> user.getRole() == Role.DRIVER)
+                .toList();
+    }
 }

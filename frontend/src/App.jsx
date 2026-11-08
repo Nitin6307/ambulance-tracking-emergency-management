@@ -12,6 +12,7 @@ import Modal from './components/common/Modal'
 import AmbulanceForm from './components/ambulance/AmbulanceForm'
 import AmbulanceTable from './components/ambulance/AmbulanceTable'
 import AmbulanceDetails from './components/ambulance/AmbulanceDetails'
+import EmergencyRequestsTable from './components/emergency/EmergencyRequestsTable'
 
 import {
   Ambulance,
@@ -41,6 +42,14 @@ function App() {
 
   // Ambulance modal states
   const [showAmbulanceModal, setShowAmbulanceModal] = useState(false)
+  // Driver assignment states
+  const [showAssignModal, setShowAssignModal] = useState(false)
+  const [selectedAmbulance, setSelectedAmbulance] = useState(null)
+  const [drivers, setDrivers] = useState([])
+  const [selectedDriverId, setSelectedDriverId] = useState('')
+  const [loadingDrivers, setLoadingDrivers] = useState(false)
+  const [assigningDriver, setAssigningDriver] = useState(false)
+  const [driverError, setDriverError] = useState('')
   const [addingAmbulance, setAddingAmbulance] = useState(false)
   const [ambulanceError, setAmbulanceError] = useState('')
 
@@ -59,9 +68,11 @@ function App() {
   const [loadingAmbulances, setLoadingAmbulances] = useState(true)
 
   // Emergency data
+  // Emergency data
+  const [emergencyRequests, setEmergencyRequests] = useState([])
   const [activeEmergencies, setActiveEmergencies] = useState(0)
   const [loadingEmergencies, setLoadingEmergencies] = useState(true)
-
+  const [assigningRequestId, setAssigningRequestId] = useState(null)
 
   // FETCH ALL AMBULANCES
   useEffect(() => {
@@ -85,35 +96,39 @@ function App() {
   }, [user])
 
 
-  // FETCH EMERGENCY REQUESTS
-  useEffect(() => {
-    async function fetchEmergencies() {
-      try {
-        const response = await emergencyApi.getAll()
+// FETCH EMERGENCY REQUESTS
+useEffect(() => {
+  async function fetchEmergencies() {
+    try {
+      const response = await emergencyApi.getAll()
+      const data = response.data
 
-        const data = response.data
+      // Store all emergency requests
+      setEmergencyRequests(data)
 
-        setActiveEmergencies(
-          data.filter(request =>
-            request.status !== 'COMPLETED' &&
-            request.status !== 'CANCELLED'
-          ).length
-        )
+      // Count active emergencies
+      setActiveEmergencies(
+        data.filter(request =>
+          request.status !== 'COMPLETED' &&
+          request.status !== 'CANCELLED'
+        ).length
+      )
 
-      } catch (error) {
-        console.error('Emergency API error:', error)
-      } finally {
-        setLoadingEmergencies(false)
-      }
-    }
-
-    if (user?.role === 'ADMIN') {
-      setLoadingEmergencies(true)
-      fetchEmergencies()
-    } else {
+    } catch (error) {
+      console.error('Emergency API error:', error)
+    } finally {
       setLoadingEmergencies(false)
     }
-  }, [user])
+  }
+
+  if (user?.role === 'ADMIN') {
+    setLoadingEmergencies(true)
+    fetchEmergencies()
+  } else {
+    setLoadingEmergencies(false)
+  }
+}, [user])
+
 
 
   // ADD NEW AMBULANCE
@@ -138,6 +153,105 @@ function App() {
       )
     } finally {
       setAddingAmbulance(false)
+    }
+  }
+
+  async function handleEmergencyAssignment(requestId, assignmentType) {
+    setAssigningRequestId(requestId)
+
+    try {
+      if (assignmentType === 'ambulance') {
+        await emergencyApi.assignNearestAmbulance(requestId)
+      } else if (assignmentType === 'driver') {
+        await emergencyApi.assignDriver(requestId)
+      }
+
+      // Refresh emergency requests after assignment
+      const response = await emergencyApi.getAll()
+      const data = response.data
+
+      setEmergencyRequests(data)
+
+      setActiveEmergencies(
+        data.filter(request =>
+          request.status !== 'COMPLETED' &&
+          request.status !== 'CANCELLED'
+        ).length
+      )
+
+      window.alert(
+        assignmentType === 'ambulance'
+          ? 'Ambulance assigned successfully!'
+          : 'Driver assigned successfully!'
+      )
+
+    } catch (error) {
+      console.error('Emergency assignment error:', error)
+
+      window.alert(
+        error.response?.data?.message ||
+        'Unable to complete the assignment.'
+      )
+    } finally {
+      setAssigningRequestId(null)
+    }
+  }
+
+  // OPEN ASSIGN DRIVER MODAL
+  async function handleOpenAssignModal(ambulanceItem) {
+    setSelectedAmbulance(ambulanceItem)
+    setSelectedDriverId('')
+    setDriverError('')
+    setDrivers([])
+    setShowAssignModal(true)
+    setLoadingDrivers(true)
+
+    try {
+      const response = await ambulanceApi.getAllDrivers()
+      setDrivers(response.data)
+    } catch (error) {
+      console.error('Error fetching drivers:', error)
+
+      setDriverError(
+        error.response?.data?.message ||
+        'Unable to load drivers'
+      )
+    } finally {
+      setLoadingDrivers(false)
+    }
+  }
+
+  // ASSIGN DRIVER TO AMBULANCE
+  async function handleAssignDriver() {
+    if (!selectedAmbulance || !selectedDriverId) {
+      return
+    }
+
+    setAssigningDriver(true)
+    setDriverError('')
+
+    try {
+      await ambulanceApi.assignDriver(
+        selectedAmbulance.id,
+        Number(selectedDriverId)
+      )
+
+      const response = await ambulanceApi.getAll()
+      setAmbulances(response.data)
+
+      setShowAssignModal(false)
+      setSelectedAmbulance(null)
+      setSelectedDriverId('')
+
+    } catch (error) {
+      console.error('Driver assignment error:', error)
+
+      setDriverError(
+        error.response?.data?.message ||
+        'Unable to assign driver'
+      )
+    } finally {
+      setAssigningDriver(false)
     }
   }
 
@@ -326,110 +440,255 @@ function App() {
 
 
         {/* DASHBOARD STATISTICS */}
-        <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {/* PAGE CONTENT */}
 
-          <StatCard
-            title="Total Ambulances"
-            value={
-              loadingAmbulances
-                ? '...'
-                : ambulances.length
-            }
-            icon={Ambulance}
-          />
-
-          <StatCard
-            title="Available"
-            value={
-              loadingAmbulances
-                ? '...'
-                : ambulances.filter(
-                    a => a.status === 'AVAILABLE'
-                  ).length
-            }
-            icon={CheckCircle2}
-            iconColor="text-emerald-400"
-          />
-
-          <StatCard
-            title="Assigned"
-            value={
-              loadingAmbulances
-                ? '...'
-                : ambulances.filter(
-                    a =>
-                      a.status !== 'AVAILABLE' &&
-                      a.status !== 'OUT_OF_SERVICE'
-                  ).length
-            }
-            icon={Activity}
-            iconColor="text-orange-400"
-          />
-
-          <StatCard
-            title="Active Emergencies"
-            value={
-              loadingEmergencies
-                ? '...'
-                : activeEmergencies
-            }
-            icon={Siren}
-            iconColor="text-red-400"
-          />
-
-        </section>
-
-
-        {/* LIVE MAP AND AMBULANCE DETAILS */}
-        <section className="mb-6 grid grid-cols-1 gap-5 xl:grid-cols-3">
-
-          <div className="rounded-xl border border-slate-700 bg-slate-900 p-5 xl:col-span-2">
-
-            <h2 className="mb-4 text-xl font-semibold">
-              Live Ambulance Map
-            </h2>
-
-            <div className="h-[480px] w-full overflow-hidden rounded-lg">
-              <AmbulanceMap
-                onAmbulanceUpdate={setAmbulance}
+        {activePage === 'Dashboard' && (
+          <>
+            <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <StatCard
+                title="Total Ambulances"
+                value={loadingAmbulances ? '...' : ambulances.length}
+                icon={Ambulance}
               />
-            </div>
 
-          </div>
+              <StatCard
+                title="Available"
+                value={
+                  loadingAmbulances
+                    ? '...'
+                    : ambulances.filter(a => a.status === 'AVAILABLE').length
+                }
+                icon={CheckCircle2}
+                iconColor="text-emerald-400"
+              />
 
-          <AmbulanceDetails ambulance={ambulance} />
+              <StatCard
+                title="Assigned"
+                value={
+                  loadingAmbulances
+                    ? '...'
+                    : ambulances.filter(
+                        a =>
+                          a.status !== 'AVAILABLE' &&
+                          a.status !== 'OUT_OF_SERVICE'
+                      ).length
+                }
+                icon={Activity}
+                iconColor="text-orange-400"
+              />
 
-        </section>
+              <StatCard
+                title="Active Emergencies"
+                value={loadingEmergencies ? '...' : activeEmergencies}
+                icon={Siren}
+                iconColor="text-red-400"
+              />
+
+            </section>
+
+            {/* LIVE MAP AND AMBULANCE DETAILS */}
+            <section className="mb-6 grid grid-cols-1 gap-5 xl:grid-cols-3">
+
+              <div className="rounded-xl border border-slate-700 bg-slate-900 p-5 xl:col-span-2">
+                <h2 className="mb-4 text-xl font-semibold">
+                  Live Ambulance Map
+                </h2>
+
+                <div className="h-[480px] w-full overflow-hidden rounded-lg">
+                  <AmbulanceMap onAmbulanceUpdate={setAmbulance} />
+                </div>
+              </div>
+
+              <AmbulanceDetails ambulance={ambulance} />
+
+            </section>
+
+            {/* ALL AMBULANCES */}
+            <section className="overflow-hidden rounded-xl border border-slate-700 bg-slate-900 p-5">
+
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="text-xl font-semibold">
+                  All Ambulances
+                </h2>
+
+                <Button
+                  onClick={() => {
+                    setAmbulanceError('')
+                    setShowAmbulanceModal(true)
+                  }}
+                >
+                  + Add Ambulance
+                </Button>
+              </div>
+
+              {loadingAmbulances ? (
+                <Loader message="Loading ambulances..." />
+              ) : (
+               <AmbulanceTable
+                 ambulances={ambulances}
+                 onAssignDriver={handleOpenAssignModal}
+               />
+              )}
+
+            </section>
+          </>
+        )}
+
+       {/* AMBULANCE MANAGEMENT PAGE */}
+       {activePage === 'Ambulances' && (
+         <>
+           <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+             <div>
+               <h2 className="text-2xl font-bold">Ambulance Management</h2>
+               <p className="mt-1 text-slate-400">
+                 Manage and monitor all registered ambulances.
+               </p>
+             </div>
+
+             <Button
+               onClick={() => {
+                 setAmbulanceError('')
+                 setShowAmbulanceModal(true)
+               }}
+             >
+               + Add Ambulance
+             </Button>
+           </div>
+
+           <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+             <StatCard
+               title="Total Ambulances"
+               value={loadingAmbulances ? '...' : ambulances.length}
+               icon={Ambulance}
+             />
+
+             <StatCard
+               title="Available"
+               value={
+                 loadingAmbulances
+                   ? '...'
+                   : ambulances.filter(a => a.status === 'AVAILABLE').length
+               }
+               icon={CheckCircle2}
+               iconColor="text-emerald-400"
+             />
+
+             <StatCard
+               title="Assigned / Active"
+               value={
+                 loadingAmbulances
+                   ? '...'
+                   : ambulances.filter(
+                       a =>
+                         a.status !== 'AVAILABLE' &&
+                         a.status !== 'OUT_OF_SERVICE'
+                     ).length
+               }
+               icon={Activity}
+               iconColor="text-orange-400"
+             />
+
+             <StatCard
+               title="Out of Service"
+               value={
+                 loadingAmbulances
+                   ? '...'
+                   : ambulances.filter(a => a.status === 'OUT_OF_SERVICE').length
+               }
+               icon={Siren}
+               iconColor="text-red-400"
+             />
+           </section>
+
+           <section className="overflow-hidden rounded-xl border border-slate-700 bg-slate-900 p-5">
+             <h3 className="mb-5 text-xl font-semibold">
+               Registered Ambulances
+             </h3>
+
+             {loadingAmbulances ? (
+               <Loader message="Loading ambulances..." />
+             ) : (
+               <AmbulanceTable
+                 ambulances={ambulances}
+                 onAssignDriver={handleOpenAssignModal}
+               />
+             )}
+           </section>
+         </>
+       )}
 
 
-        {/* ALL AMBULANCES */}
-        <section className="overflow-hidden rounded-xl border border-slate-700 bg-slate-900 p-5">
+{/* EMERGENCY REQUESTS PAGE */}
+{activePage === 'Emergency Requests' && (
+  <>
+    <div className="mb-6">
+      <h2 className="text-2xl font-bold">
+        Emergency Requests Management
+      </h2>
+      <p className="mt-1 text-slate-400">
+        Monitor and manage all patient emergency requests.
+      </p>
+    </div>
 
-          <div className="mb-5 flex items-center justify-between">
+    <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <StatCard
+        title="Total Requests"
+        value={loadingEmergencies ? '...' : emergencyRequests.length}
+        icon={Siren}
+      />
 
-            <h2 className="text-xl font-semibold">
-              All Ambulances
-            </h2>
+      <StatCard
+        title="Active Requests"
+        value={loadingEmergencies ? '...' : activeEmergencies}
+        icon={Activity}
+        iconColor="text-red-400"
+      />
 
-            <Button
-              onClick={() => {
-                setAmbulanceError('')
-                setShowAmbulanceModal(true)
-              }}
-            >
-              + Add Ambulance
-            </Button>
+      <StatCard
+        title="Completed Requests"
+        value={
+          loadingEmergencies
+            ? '...'
+            : emergencyRequests.filter(r => r.status === 'COMPLETED').length
+        }
+        icon={CheckCircle2}
+        iconColor="text-emerald-400"
+      />
+    </section>
 
-          </div>
+    <section className="overflow-hidden rounded-xl border border-slate-700 bg-slate-900 p-5">
+      <h3 className="mb-5 text-xl font-semibold">
+        All Emergency Requests
+      </h3>
 
+      {loadingEmergencies ? (
+        <Loader message="Loading emergency requests..." />
+      ) : (
+        <EmergencyRequestsTable
+          requests={emergencyRequests}
+          onAssignAmbulance={(requestId) =>
+            handleEmergencyAssignment(requestId, 'ambulance')
+          }
+          onAssignDriver={(requestId) =>
+            handleEmergencyAssignment(requestId, 'driver')
+          }
+          assigningRequestId={assigningRequestId}
+        />
+      )}
+    </section>
+  </>
+)}
 
-          {loadingAmbulances ? (
-            <Loader message="Loading ambulances..." />
-          ) : (
-            <AmbulanceTable ambulances={ambulances} />
-          )}
+{/* OTHER PAGE PLACEHOLDERS */}
+{!['Dashboard', 'Ambulances', 'Emergency Requests'].includes(activePage) && (
+  <section className="rounded-xl border border-slate-700 bg-slate-900 p-8">
+    <h2 className="mb-3 text-2xl font-bold">{activePage}</h2>
+    <p className="text-slate-400">
+      {activePage} page is under development.
+    </p>
+  </section>
+)}
 
-        </section>
 
       </main>
 
@@ -454,6 +713,85 @@ function App() {
         />
 
       </Modal>
+
+
+{/* ASSIGN DRIVER MODAL */}
+<Modal
+  isOpen={showAssignModal}
+  onClose={() => setShowAssignModal(false)}
+  title="Assign Driver"
+>
+  {selectedAmbulance && (
+    <div className="space-y-5">
+
+      <div className="rounded-lg bg-slate-800 p-4">
+        <p className="text-sm text-slate-400">
+          Selected Ambulance
+        </p>
+        <p className="mt-1 font-semibold text-white">
+          {selectedAmbulance.ambulanceNumber}
+        </p>
+        <p className="text-sm text-slate-300">
+          {selectedAmbulance.vehicleNumber}
+        </p>
+      </div>
+
+      {loadingDrivers ? (
+        <Loader message="Loading drivers..." />
+      ) : driverError ? (
+        <p className="text-sm text-red-400">
+          {driverError}
+        </p>
+      ) : drivers.length === 0 ? (
+        <p className="text-sm text-slate-400">
+          No registered drivers found.
+        </p>
+      ) : (
+        <div>
+          <label className="mb-2 block text-sm font-medium text-slate-300">
+            Select Driver
+          </label>
+
+          <select
+            value={selectedDriverId}
+            onChange={e => setSelectedDriverId(e.target.value)}
+            className="w-full rounded-lg border border-slate-600 bg-slate-800 p-3 text-white outline-none focus:border-blue-500"
+          >
+            <option value="">Choose a driver</option>
+
+            {drivers.map(driver => (
+              <option key={driver.id} value={driver.id}>
+                {driver.name} ({driver.email})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      <div className="flex justify-end gap-3">
+        <Button
+          variant="secondary"
+          onClick={() => setShowAssignModal(false)}
+        >
+          Cancel
+        </Button>
+
+        <Button
+          onClick={handleAssignDriver}
+          disabled={
+            !selectedDriverId ||
+            loadingDrivers ||
+            assigningDriver
+          }
+        >
+          {assigningDriver ? 'Assigning...' : 'Assign Driver'}
+        </Button>
+      </div>
+
+    </div>
+  )}
+</Modal>
+
 
     </div>
   )
