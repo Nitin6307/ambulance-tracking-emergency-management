@@ -1,6 +1,7 @@
 package com.ambulance.management.dto;
 
 import com.ambulance.management.entity.Role;
+import com.ambulance.management.entity.DriverStatus;
 
 public class UserResponse {
 
@@ -8,15 +9,18 @@ public class UserResponse {
     private String name;
     private String email;
     private Role role;
+    private DriverStatus driverStatus;
 
     public UserResponse() {
     }
 
-    public UserResponse(Long id, String name, String email, Role role) {
+    public UserResponse(Long id, String name, String email,
+                        Role role, DriverStatus driverStatus) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.role = role;
+        this.driverStatus = driverStatus;
     }
 
     public Long getId() {
@@ -33,5 +37,9 @@ public class UserResponse {
 
     public Role getRole() {
         return role;
+    }
+
+    public DriverStatus getDriverStatus() {
+        return driverStatus;
     }
 }

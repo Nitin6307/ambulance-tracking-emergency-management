@@ -4,11 +4,15 @@ package com.ambulance.management.service;
 import com.ambulance.management.dto.EmergencyRequestDTO;
 import com.ambulance.management.dto.EmergencyResponseDTO;
 
+import com.ambulance.management.entity.Ambulance;
+import com.ambulance.management.entity.AmbulanceStatus;
+import com.ambulance.management.entity.DriverStatus;
 import com.ambulance.management.entity.EmergencyRequest;
 import com.ambulance.management.entity.EmergencyStatus;
 import com.ambulance.management.entity.Role;
 import com.ambulance.management.entity.User;
 
+import com.ambulance.management.repository.AmbulanceRepository;
 import com.ambulance.management.repository.EmergencyRequestRepository;
 import com.ambulance.management.repository.UserRepository;
 
@@ -16,12 +20,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ambulance.management.entity.Ambulance;
-import com.ambulance.management.entity.AmbulanceStatus;
-import com.ambulance.management.repository.AmbulanceRepository;
 import java.math.BigDecimal;
 import java.util.Comparator;
-
 import java.util.List;
 
 @Service
@@ -92,6 +92,8 @@ public class EmergencyRequestService {
                 .map(EmergencyResponseDTO::new)
                 .toList();
     }
+
+    // 3. Admin views all emergency requests
     @Transactional(readOnly = true)
     public List<EmergencyResponseDTO> getAllEmergencyRequests() {
 
@@ -101,6 +103,7 @@ public class EmergencyRequestService {
                 .toList();
     }
 
+    // 4. Calculate distance between two GPS coordinates
     private double calculateDistance(
             BigDecimal lat1, BigDecimal lon1,
             BigDecimal lat2, BigDecimal lon2) {
@@ -126,6 +129,8 @@ public class EmergencyRequestService {
 
         return EARTH_RADIUS * c;
     }
+
+    // 5. Assign nearest available ambulance
     @Transactional
     public EmergencyResponseDTO assignNearestAmbulance(Long requestId) {
 
@@ -171,7 +176,7 @@ public class EmergencyRequestService {
         return new EmergencyResponseDTO(savedRequest);
     }
 
-
+    // 6. Assign an available driver to an emergency
     @Transactional
     public EmergencyResponseDTO assignDriverToEmergencyRequest(Long requestId) {
 
@@ -191,35 +196,51 @@ public class EmergencyRequestService {
                     "No ambulance assigned to this request");
         }
 
+        User availableDriver;
+
         // Case 1: Ambulance already has a driver
         if (ambulance.getDriver() != null) {
 
-            request.setAssignedDriver(ambulance.getDriver());
-            request.setStatus(EmergencyStatus.DRIVER_ASSIGNED);
+            availableDriver = ambulance.getDriver();
 
-            EmergencyRequest savedRequest =
-                    emergencyRequestRepository.save(request);
+            if (availableDriver.getRole() != Role.DRIVER) {
+                throw new IllegalStateException(
+                        "Assigned user is not a driver");
+            }
 
-            return new EmergencyResponseDTO(savedRequest);
+            if (availableDriver.getDriverStatus() != DriverStatus.ASSIGNED) {
+                throw new IllegalStateException(
+                        "The ambulance's driver is not in ASSIGNED status");
+            }
+
+        } else {
+
+            // Case 2: Find a driver whose status is AVAILABLE
+            List<User> availableDrivers =
+                    userRepository.findByRoleAndDriverStatus(
+                            Role.DRIVER,
+                            DriverStatus.AVAILABLE
+                    );
+
+            availableDriver = availableDrivers.stream()
+                    .filter(driver ->
+                            !ambulanceRepository.existsByDriverId(driver.getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException(
+                            "No available driver found. Please check driver availability."));
+
+            // Assign driver to ambulance
+            ambulance.setDriver(availableDriver);
+
+            availableDriver.setDriverStatus(DriverStatus.ASSIGNED);
+
+            userRepository.save(availableDriver);
+            ambulanceRepository.save(ambulance);
         }
 
-        // Case 2: Find a new available driver
-        List<User> drivers = userRepository.findByRole(Role.DRIVER);
-
-        User availableDriver = drivers.stream()
-                .filter(driver ->
-                        !ambulanceRepository.existsByDriverId(driver.getId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        "No available driver found"));
-
-        ambulance.setDriver(availableDriver);
-
-        // Preserve driver information in the emergency record
+        // Link driver to emergency request
         request.setAssignedDriver(availableDriver);
         request.setStatus(EmergencyStatus.DRIVER_ASSIGNED);
-
-        ambulanceRepository.save(ambulance);
 
         EmergencyRequest savedRequest =
                 emergencyRequestRepository.save(request);
@@ -227,8 +248,7 @@ public class EmergencyRequestService {
         return new EmergencyResponseDTO(savedRequest);
     }
 
-
-
+    // 7. Driver views their assigned emergency requests
     @Transactional(readOnly = true)
     public List<EmergencyResponseDTO> getDriverEmergencyRequests(
             String driverEmail) {
@@ -249,8 +269,7 @@ public class EmergencyRequestService {
                 .toList();
     }
 
-
-
+    // 8. Driver updates emergency status
     @Transactional
     public EmergencyResponseDTO updateEmergencyStatus(
             Long requestId,
@@ -265,9 +284,11 @@ public class EmergencyRequestService {
 
         if (ambulance == null || ambulance.getDriver() == null
                 || !ambulance.getDriver().getEmail().equals(driverEmail)) {
-            throw new IllegalStateException(
+            throw new AccessDeniedException(
                     "You are not assigned to this emergency");
         }
+
+        User driver = ambulance.getDriver();
 
         EmergencyStatus currentStatus = request.getStatus();
 
@@ -288,17 +309,19 @@ public class EmergencyRequestService {
                     "Invalid emergency status transition");
         }
 
-        // Preserve the assigned driver in the emergency record
-        request.setAssignedDriver(ambulance.getDriver());
+        // Preserve assigned driver in emergency record
+        request.setAssignedDriver(driver);
 
         // Update emergency status
         request.setStatus(newStatus);
 
-        // Synchronize ambulance status
+        // Synchronize ambulance and driver statuses
         switch (newStatus) {
 
-            case ON_THE_WAY ->
-                    ambulance.setStatus(AmbulanceStatus.ON_THE_WAY);
+            case ON_THE_WAY -> {
+                ambulance.setStatus(AmbulanceStatus.ON_THE_WAY);
+                driver.setDriverStatus(DriverStatus.ON_DUTY);
+            }
 
             case AT_PATIENT_LOCATION ->
                     ambulance.setStatus(AmbulanceStatus.AT_PATIENT_LOCATION);
@@ -312,11 +335,14 @@ public class EmergencyRequestService {
             case COMPLETED -> {
                 ambulance.setStatus(AmbulanceStatus.AVAILABLE);
 
-                // Release driver for future assignments
+                // Release driver after completing emergency
+                driver.setDriverStatus(DriverStatus.AVAILABLE);
                 ambulance.setDriver(null);
             }
         }
 
+        // Save driver and ambulance changes
+        userRepository.save(driver);
         ambulanceRepository.save(ambulance);
 
         EmergencyRequest savedRequest =
@@ -324,6 +350,4 @@ public class EmergencyRequestService {
 
         return new EmergencyResponseDTO(savedRequest);
     }
-
-
 }

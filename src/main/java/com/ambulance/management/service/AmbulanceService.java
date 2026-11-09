@@ -3,6 +3,7 @@ package com.ambulance.management.service;
 
 import com.ambulance.management.entity.Ambulance;
 import com.ambulance.management.entity.AmbulanceStatus;
+import com.ambulance.management.entity.DriverStatus;
 import com.ambulance.management.entity.Role;
 import com.ambulance.management.entity.User;
 import com.ambulance.management.repository.AmbulanceRepository;
@@ -73,7 +74,6 @@ public class AmbulanceService {
     }
 
     // 5. Assign a driver to an ambulance
-
     @Transactional
     public Ambulance assignDriver(Long ambulanceId, Long driverId) {
 
@@ -93,10 +93,24 @@ public class AmbulanceService {
                     "Only available ambulances can be assigned");
         }
 
-        ambulance.setDriver(driver);
+        if (driver.getDriverStatus() != DriverStatus.AVAILABLE) {
+            throw new IllegalArgumentException(
+                    "Driver is not available for assignment");
+        }
 
-        // Change status after assigning driver
+        // Extra protection against duplicate ambulance assignments
+        if (ambulanceRepository.existsByDriverId(driverId)) {
+            throw new IllegalArgumentException(
+                    "Driver is already assigned to another ambulance");
+        }
+
+        ambulance.setDriver(driver);
         ambulance.setStatus(AmbulanceStatus.ASSIGNED);
+
+        // Update driver availability
+        driver.setDriverStatus(DriverStatus.ASSIGNED);
+
+        userRepository.save(driver);
 
         return ambulanceRepository.save(ambulance);
     }
@@ -123,7 +137,7 @@ public class AmbulanceService {
         return ambulanceRepository.save(ambulance);
     }
 
-    // ADMIN: Update GPS location of any ambulance
+    // 7. ADMIN: Update GPS location of any ambulance
     @Transactional
     public Ambulance updateAdminLocation(
             Long ambulanceId,
@@ -155,7 +169,7 @@ public class AmbulanceService {
         return ambulanceRepository.save(ambulance);
     }
 
-
+    // 8. Update ambulance status
     @Transactional
     public Ambulance updateStatus(
             Long ambulanceId,
@@ -190,15 +204,26 @@ public class AmbulanceService {
 
         ambulance.setStatus(newStatus);
 
+        User driver = ambulance.getDriver();
+
+        // Driver starts handling an emergency
+        if (newStatus == AmbulanceStatus.ON_THE_WAY) {
+            driver.setDriverStatus(DriverStatus.ON_DUTY);
+            userRepository.save(driver);
+        }
+
         // Release driver after completing the trip
         if (newStatus == AmbulanceStatus.AVAILABLE) {
+            driver.setDriverStatus(DriverStatus.AVAILABLE);
+            userRepository.save(driver);
+
             ambulance.setDriver(null);
         }
 
         return ambulanceRepository.save(ambulance);
     }
 
-
+    // 9. Update ambulance maintenance status
     @Transactional
     public Ambulance updateMaintenanceStatus(
             Long ambulanceId,
@@ -231,7 +256,4 @@ public class AmbulanceService {
 
         return ambulanceRepository.save(ambulance);
     }
-
-
-
 }

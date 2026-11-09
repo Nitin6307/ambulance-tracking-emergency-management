@@ -30,6 +30,9 @@ const ambulanceApi = {
   // Admin maintenance
   updateMaintenance: (ambulanceId) =>
     api.put(`/ambulances/${ambulanceId}/maintenance`),
+
+    updateDriverStatus: (driverId, statusData) =>
+      api.put(`/users/drivers/${driverId}/status`, statusData),
 }
 
 export default ambulanceApi

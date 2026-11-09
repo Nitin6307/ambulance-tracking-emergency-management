@@ -1,16 +1,21 @@
+
 package com.ambulance.management.controller;
 
 import com.ambulance.management.dto.RegisterRequest;
+import com.ambulance.management.dto.UserResponse;
 import com.ambulance.management.entity.Role;
 import com.ambulance.management.entity.User;
 import com.ambulance.management.service.UserService;
+
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.ambulance.management.dto.UserResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.access.prepost.PreAuthorize;
+import com.ambulance.management.dto.DriverStatusUpdateRequest;
+import com.ambulance.management.entity.DriverStatus;
+
 import java.util.List;
 
 @RestController
@@ -40,39 +45,36 @@ public class UserController {
                 savedUser.getId(),
                 savedUser.getName(),
                 savedUser.getEmail(),
-                savedUser.getRole()
+                savedUser.getRole(),
+                savedUser.getDriverStatus()
         );
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
     }
+
     @GetMapping("/patient-test")
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<String> patientTest() {
-
-        return ResponseEntity.ok(
-                "PATIENT access granted"
-        );
+        return ResponseEntity.ok("PATIENT access granted");
     }
+
     @GetMapping("/driver-test")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<String> driverTest() {
-
-        return ResponseEntity.ok(
-                "DRIVER access granted"
-        );
+        return ResponseEntity.ok("DRIVER access granted");
     }
+
     @GetMapping("/admin-test")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> adminTest() {
-
-        return ResponseEntity.ok(
-                "ADMIN access granted"
-        );
+        return ResponseEntity.ok("ADMIN access granted");
     }
+
     @GetMapping("/me")
-    public ResponseEntity<String> getCurrentUser(Authentication authentication) {
+    public ResponseEntity<String> getCurrentUser(
+            Authentication authentication) {
 
         return ResponseEntity.ok(
                 "Authenticated user: " + authentication.getName()
@@ -89,10 +91,34 @@ public class UserController {
                         user.getId(),
                         user.getName(),
                         user.getEmail(),
-                        user.getRole()
+                        user.getRole(),
+                        user.getDriverStatus()
                 ))
                 .toList();
 
         return ResponseEntity.ok(drivers);
     }
+
+    @PutMapping("/drivers/{driverId}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> updateDriverStatus(
+            @PathVariable Long driverId,
+            @Valid @RequestBody DriverStatusUpdateRequest request) {
+
+        User updatedDriver = userService.updateDriverStatus(
+                driverId,
+                request.getDriverStatus()
+        );
+
+        UserResponse response = new UserResponse(
+                updatedDriver.getId(),
+                updatedDriver.getName(),
+                updatedDriver.getEmail(),
+                updatedDriver.getRole(),
+                updatedDriver.getDriverStatus()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
 }

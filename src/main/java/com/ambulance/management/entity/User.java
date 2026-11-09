@@ -1,3 +1,4 @@
+
 package com.ambulance.management.entity;
 
 import jakarta.persistence.*;
@@ -20,6 +21,10 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "driver_status")
+    private DriverStatus driverStatus;
+
     public User() {
     }
 
@@ -28,6 +33,17 @@ public class User {
         this.email = email;
         this.password = password;
         this.role = role;
+
+        if (role == Role.DRIVER) {
+            this.driverStatus = DriverStatus.AVAILABLE;
+        }
+    }
+
+    @PrePersist
+    public void setDefaultDriverStatus() {
+        if (role == Role.DRIVER && driverStatus == null) {
+            driverStatus = DriverStatus.AVAILABLE;
+        }
     }
 
     public Long getId() {
@@ -68,5 +84,13 @@ public class User {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public DriverStatus getDriverStatus() {
+        return driverStatus;
+    }
+
+    public void setDriverStatus(DriverStatus driverStatus) {
+        this.driverStatus = driverStatus;
     }
 }
