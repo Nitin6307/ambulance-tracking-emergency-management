@@ -1,8 +1,16 @@
 
 import { useEffect, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap
+} from 'react-leaflet'
 import { Client } from '@stomp/stompjs'
 import L from 'leaflet'
+
+import ambulanceApi from './api/ambulanceApi'
 
 import markerIcon from 'leaflet/dist/images/marker-icon.png'
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
@@ -18,33 +26,65 @@ const ambulanceIcon = new L.Icon({
   shadowSize: [41, 41],
 })
 
-function MapUpdater({ ambulance }) {
+function MapUpdater({ ambulances }) {
   const map = useMap()
+  const [hasFitted, setHasFitted] = useState(false)
 
   useEffect(() => {
-    if (ambulance?.latitude != null && ambulance?.longitude != null) {
-      map.flyTo(
-        [ambulance.latitude, ambulance.longitude],
-        map.getZoom(),
-        { duration: 1 }
+    if (hasFitted) return
+
+    const locatedAmbulances = ambulances.filter(
+      ambulance =>
+        ambulance.latitude != null &&
+        ambulance.longitude != null
+    )
+
+    if (locatedAmbulances.length > 0) {
+      const bounds = L.latLngBounds(
+        locatedAmbulances.map(ambulance => [
+          Number(ambulance.latitude),
+          Number(ambulance.longitude)
+        ])
       )
+
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 })
+      setHasFitted(true)
     }
-  }, [ambulance, map])
+  }, [ambulances, map, hasFitted])
 
   return null
 }
 
-function AmbulanceMap({ onAmbulanceUpdate }) {
-  const [ambulance, setAmbulance] = useState({
-    id: 3,
-    ambulanceNumber: 'AMB-003',
-    latitude: 26.848,
-    longitude: 80.948,
-    status: 'ASSIGNED',
-  })
+function AmbulanceMap({ onAmbulanceUpdate, ambulanceId = null }) {
+  const [ambulances, setAmbulances] = useState([])
+  const [connectionStatus, setConnectionStatus] =
+    useState('Connecting...')
 
-  const [connectionStatus, setConnectionStatus] = useState('Connecting...')
+  const [loading, setLoading] = useState(true)
 
+  // Fetch all ambulances from backend
+  useEffect(() => {
+    ambulanceApi.getAll()
+      .then(response => {
+        const data = response.data
+
+        if (ambulanceId !== null) {
+          setAmbulances(
+            data.filter(item => Number(item.id) === Number(ambulanceId))
+          )
+        } else {
+          setAmbulances(data)
+        }
+      })
+      .catch(error => {
+        console.error('Failed to fetch ambulances:', error)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [ambulanceId])
+
+  // Connect to WebSocket for real-time location updates
   useEffect(() => {
     const client = new Client({
       brokerURL: 'ws://localhost:8080/ws',
@@ -52,14 +92,40 @@ function AmbulanceMap({ onAmbulanceUpdate }) {
       reconnectDelay: 5000,
 
       onConnect: () => {
+        console.log('Ambulance WebSocket connected')
         setConnectionStatus('Connected')
 
         client.subscribe('/topic/ambulances', (message) => {
-          const updatedAmbulance = JSON.parse(message.body)
+          try {
+            const updatedAmbulance = JSON.parse(message.body)
 
-          if (updatedAmbulance.id === 3) {
-            setAmbulance(updatedAmbulance)
+            if (
+              ambulanceId !== null &&
+              Number(updatedAmbulance.id) !== Number(ambulanceId)
+            ) {
+              return
+            }
+
+            setAmbulances(previousAmbulances => {
+              const exists = previousAmbulances.some(
+                ambulance => Number(ambulance.id) === Number(updatedAmbulance.id)
+              )
+
+              if (exists) {
+                return previousAmbulances.map(ambulance =>
+                  Number(ambulance.id) === Number(updatedAmbulance.id)
+                    ? { ...ambulance, ...updatedAmbulance }
+                    : ambulance
+                )
+              }
+
+              return [...previousAmbulances, updatedAmbulance]
+            })
+
             onAmbulanceUpdate?.(updatedAmbulance)
+
+          } catch (error) {
+            console.error('Invalid ambulance update:', error)
           }
         })
       },
@@ -73,6 +139,10 @@ function AmbulanceMap({ onAmbulanceUpdate }) {
         console.error('STOMP error:', frame.headers['message'])
         setConnectionStatus('STOMP error')
       },
+
+      onDisconnect: () => {
+        setConnectionStatus('Disconnected')
+      }
     })
 
     client.activate()
@@ -80,41 +150,101 @@ function AmbulanceMap({ onAmbulanceUpdate }) {
     return () => {
       client.deactivate()
     }
-  }, [])
+  }, [ambulanceId])
 
+  const locatedAmbulances = ambulances.filter(
+    ambulance =>
+      ambulance.latitude != null &&
+      ambulance.longitude != null
+  )
 
   return (
     <div style={{ width: '100%', height: '100%' }}>
+
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-2 text-sm">
+
+        <span className="text-slate-300">
+          Total Ambulances: {ambulances.length}
+        </span>
+
+        <span className="text-slate-300">
+          Located: {locatedAmbulances.length}
+        </span>
+
+        <span className={
+          connectionStatus === 'Connected'
+            ? 'text-green-400'
+            : 'text-yellow-400'
+        }>
+          ● {connectionStatus}
+        </span>
+
+      </div>
+
+      {loading && (
+        <p className="p-2 text-sm text-slate-300">
+          Loading ambulance locations...
+        </p>
+      )}
+
       <MapContainer
-        center={[ambulance.latitude, ambulance.longitude]}
-        zoom={14}
-        style={{ height: '100%', width: '100%', borderRadius: '10px' }}
+        center={[26.8467, 80.9462]}
+        zoom={12}
+        style={{
+          height: 'calc(100% - 30px)',
+          width: '100%',
+          borderRadius: '10px'
+        }}
       >
+
         <TileLayer
           attribution='&copy; OpenStreetMap contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <MapUpdater ambulance={ambulance} />
+        <MapUpdater ambulances={ambulances} />
 
-        <Marker
-          position={[ambulance.latitude, ambulance.longitude]}
-          icon={ambulanceIcon}
-        >
-          <Popup>
-            <strong>{ambulance.ambulanceNumber}</strong>
-            <br />
-            Status: {ambulance.status}
-            <br />
-            Latitude: {ambulance.latitude}
-            <br />
-            Longitude: {ambulance.longitude}
-          </Popup>
-        </Marker>
+        {locatedAmbulances.map(ambulance => (
+
+          <Marker
+            key={ambulance.id}
+            position={[
+              Number(ambulance.latitude),
+              Number(ambulance.longitude)
+            ]}
+            icon={ambulanceIcon}
+          >
+
+            <Popup>
+
+              <strong>{ambulance.ambulanceNumber}</strong>
+
+              <br />
+
+              Status: {ambulance.status}
+
+              <br />
+
+              Vehicle: {ambulance.vehicleNumber}
+
+              <br />
+
+              Latitude: {ambulance.latitude}
+
+              <br />
+
+              Longitude: {ambulance.longitude}
+
+            </Popup>
+
+          </Marker>
+
+        ))}
+
       </MapContainer>
+
     </div>
   )
-
 }
 
 export default AmbulanceMap
