@@ -37,7 +37,7 @@ function LiveTracking() {
   )
 
   const trackableRequest = activeRequests.find(
-    request => request.ambulanceId === 3
+    request => request.ambulanceId != null
   )
 
   if (loading) {
@@ -132,16 +132,17 @@ function LiveTracking() {
               </div>
 
               <div className="h-[450px] p-2">
-                <AmbulanceMap />
+                <AmbulanceMap
+                  ambulanceId={trackableRequest.ambulanceId}
+                />
               </div>
             </section>
           )}
 
           {!trackableRequest && (
             <div className="rounded-xl border border-slate-700 bg-slate-900 p-5 text-sm text-slate-400">
-              Your request's assigned ambulance is not yet supported by the
-              current map component. We'll update the map to track any assigned
-              ambulance dynamically in a later step.
+              Your ambulance has not been assigned yet. Please wait while
+              the emergency team assigns an available ambulance.
             </div>
           )}
         </div>

@@ -62,26 +62,30 @@ function AmbulanceMap({ onAmbulanceUpdate, ambulanceId = null }) {
 
   const [loading, setLoading] = useState(true)
 
-  // Fetch all ambulances from backend
+  // Fetch ambulances from backend
   useEffect(() => {
-    ambulanceApi.getAll()
-      .then(response => {
-        const data = response.data
+    const fetchAmbulances = async () => {
+      setLoading(true)
 
+      try {
         if (ambulanceId !== null) {
-          setAmbulances(
-            data.filter(item => Number(item.id) === Number(ambulanceId))
-          )
+          // Patient: fetch only the assigned ambulance
+          const response = await ambulanceApi.getById(ambulanceId)
+          setAmbulances([response.data])
         } else {
-          setAmbulances(data)
+          // Admin: fetch all ambulances
+          const response = await ambulanceApi.getAll()
+          setAmbulances(response.data)
         }
-      })
-      .catch(error => {
+      } catch (error) {
         console.error('Failed to fetch ambulances:', error)
-      })
-      .finally(() => {
+        setAmbulances([])
+      } finally {
         setLoading(false)
-      })
+      }
+    }
+
+    fetchAmbulances()
   }, [ambulanceId])
 
   // Connect to WebSocket for real-time location updates
