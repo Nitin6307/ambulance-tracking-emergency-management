@@ -36,9 +36,9 @@ function LiveTracking() {
       !['COMPLETED', 'CANCELLED'].includes(request.status)
   )
 
-  const trackableRequest = activeRequests.find(
-    request => request.ambulanceId != null
-  )
+ const trackableRequest = activeRequests
+   .filter(request => request.ambulanceId != null)
+   .sort((a, b) => Number(b.id) - Number(a.id))[0]
 
   if (loading) {
     return <Loader message="Loading tracking information..." />

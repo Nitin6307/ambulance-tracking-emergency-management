@@ -1,7 +1,6 @@
 
 import { useEffect, useState } from 'react'
-import { RefreshCw, ClipboardList } from 'lucide-react'
-
+import { RefreshCw, ClipboardList, XCircle } from 'lucide-react'
 import emergencyApi from '../../api/emergencyApi'
 import StatusBadge from '../../components/common/StatusBadge'
 import Loader from '../../components/common/Loader'
@@ -10,6 +9,7 @@ function MyRequests() {
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [cancellingId, setCancellingId] = useState(null)
 
   async function fetchRequests() {
     setLoading(true)
@@ -25,6 +25,32 @@ function MyRequests() {
       )
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleCancelRequest(requestId) {
+    const confirmed = window.confirm(
+      `Are you sure you want to cancel request #${requestId}?`
+    )
+
+    if (!confirmed) return
+
+    try {
+      setCancellingId(requestId)
+      setError('')
+
+      await emergencyApi.cancelRequest(requestId)
+
+      await fetchRequests()
+    } catch (err) {
+      console.error('Unable to cancel request:', err)
+
+      setError(
+        err.response?.data?.message ||
+        'Unable to cancel this request.'
+      )
+    } finally {
+      setCancellingId(null)
     }
   }
 
@@ -83,6 +109,7 @@ function MyRequests() {
                 <th className="p-4">Ambulance</th>
                 <th className="p-4">Status</th>
                 <th className="p-4">Requested At</th>
+                <th className="p-4">Actions</th>
               </tr>
             </thead>
 
@@ -122,6 +149,24 @@ function MyRequests() {
                       ? new Date(request.createdAt).toLocaleString()
                       : 'N/A'}
                   </td>
+
+                  <td className="p-4">
+                    {request.status === 'PENDING' && (
+                      <button
+                        onClick={() => handleCancelRequest(request.id)}
+                        disabled={cancellingId === request.id}
+                        className="flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                      >
+                        <XCircle size={14} />
+                        {cancellingId === request.id ? 'Cancelling...' : 'Cancel'}
+                      </button>
+                    )}
+
+                    {request.status === 'CANCELLED' && (
+                      <span className="text-slate-500">Cancelled</span>
+                    )}
+                  </td>
+
                 </tr>
               ))}
             </tbody>

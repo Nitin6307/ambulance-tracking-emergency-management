@@ -18,6 +18,9 @@ const emergencyApi = {
 
   updateStatus: (requestId, statusData) =>
     api.put(`/emergency-requests/${requestId}/status`, statusData),
+
+  cancelRequest: (requestId) =>
+    api.put(`/emergency-requests/${requestId}/cancel`),
 }
 
 export default emergencyApi

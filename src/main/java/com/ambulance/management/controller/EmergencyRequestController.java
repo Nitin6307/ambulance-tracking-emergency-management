@@ -118,4 +118,21 @@ public class EmergencyRequestController {
 
         return ResponseEntity.ok(response);
     }
+
+    // PATIENT: Cancel their own pending emergency request
+    @PutMapping("/{requestId}/cancel")
+    @PreAuthorize("hasRole('PATIENT')")
+    public ResponseEntity<EmergencyResponseDTO> cancelEmergencyRequest(
+            @PathVariable Long requestId,
+            Authentication authentication) {
+
+        EmergencyResponseDTO response =
+                emergencyRequestService.cancelEmergencyRequest(
+                        requestId,
+                        authentication.getName()
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
 }

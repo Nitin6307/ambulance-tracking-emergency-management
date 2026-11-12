@@ -350,4 +350,42 @@ public class EmergencyRequestService {
 
         return new EmergencyResponseDTO(savedRequest);
     }
+
+    // 9. Patient cancels their own pending emergency request
+    @Transactional
+    public EmergencyResponseDTO cancelEmergencyRequest(
+            Long requestId,
+            String patientEmail) {
+
+        EmergencyRequest request = emergencyRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Emergency request not found"));
+
+        // Verify that the request belongs to this patient
+        if (!request.getPatient().getEmail().equals(patientEmail)) {
+            throw new AccessDeniedException(
+                    "You cannot cancel another patient's request");
+        }
+
+        // Only PENDING requests can be cancelled
+        if (request.getStatus() != EmergencyStatus.PENDING) {
+            throw new IllegalStateException(
+                    "Only pending emergency requests can be cancelled");
+        }
+
+        // Ensure no ambulance or driver is assigned
+        if (request.getAmbulance() != null
+                || request.getAssignedDriver() != null) {
+            throw new IllegalStateException(
+                    "Cannot cancel a request that has an ambulance or driver assigned");
+        }
+
+        request.setStatus(EmergencyStatus.CANCELLED);
+
+        EmergencyRequest savedRequest =
+                emergencyRequestRepository.save(request);
+
+        return new EmergencyResponseDTO(savedRequest);
+    }
+
 }
