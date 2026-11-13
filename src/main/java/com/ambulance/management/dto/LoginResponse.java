@@ -1,16 +1,19 @@
+
 package com.ambulance.management.dto;
 
 public class LoginResponse {
 
     private String token;
+    private String name;
     private String email;
     private String role;
 
     public LoginResponse() {
     }
 
-    public LoginResponse(String token, String email, String role) {
+    public LoginResponse(String token, String name, String email, String role) {
         this.token = token;
+        this.name = name;
         this.email = email;
         this.role = role;
     }
@@ -21,6 +24,14 @@ public class LoginResponse {
 
     public void setToken(String token) {
         this.token = token;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getEmail() {

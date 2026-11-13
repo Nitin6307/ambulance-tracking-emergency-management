@@ -1,3 +1,4 @@
+
 package com.ambulance.management.service;
 
 import com.ambulance.management.dto.LoginRequest;
@@ -5,6 +6,7 @@ import com.ambulance.management.dto.LoginResponse;
 import com.ambulance.management.entity.User;
 import com.ambulance.management.repository.UserRepository;
 import com.ambulance.management.security.JwtService;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -46,9 +48,10 @@ public class AuthService {
                 user.getRole().name()
         );
 
-        // Return login response
+        // Return login response with user information
         return new LoginResponse(
                 token,
+                user.getName(),
                 user.getEmail(),
                 user.getRole().name()
         );
