@@ -19,7 +19,7 @@ function Home() {
       description:
         'Request an ambulance and track its live location.',
       icon: UserRound,
-      path: '/login',
+     path: '/login/patient',
       button: 'Patient Login',
       registerPath: '/register',
       registerButton: 'Create Patient Account',
@@ -29,7 +29,7 @@ function Home() {
       description:
         'Access assigned emergency requests and update your journey.',
       icon: Truck,
-      path: '/login',
+      path: '/login/driver',
       button: 'Driver Login',
     },
     {
@@ -37,7 +37,7 @@ function Home() {
       description:
         'Manage ambulances, drivers and emergency requests.',
       icon: ShieldCheck,
-      path: '/login',
+      path: '/login/admin',
       button: 'Admin Login',
     },
   ]
@@ -58,7 +58,7 @@ function Home() {
         </div>
 
         <Link
-          to="/login"
+          to="/login/patient"
           className="rounded-lg bg-red-600 px-5 py-2.5 font-semibold hover:bg-red-700"
         >
           Login

@@ -42,6 +42,22 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    // Admin creates a new driver account
+    public User createDriver(String name, String email, String password, String contactNumber) {
+
+        if (userRepository.existsByEmail(email)) {
+            throw new RuntimeException("Email already registered");
+        }
+
+        User driver = new User(name, email, password, Role.DRIVER);
+
+        driver.setPassword(passwordEncoder.encode(password));
+        driver.setContactNumber(contactNumber);
+        driver.setDriverStatus(DriverStatus.OFF_DUTY);
+
+        return userRepository.save(driver);
+    }
+
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }

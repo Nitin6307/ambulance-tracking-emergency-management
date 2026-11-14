@@ -42,7 +42,7 @@ function DriverLayout() {
     <div className="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 md:flex">
 
       {/* Sidebar */}
-      <aside className="w-full border-b border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:min-h-screen md:w-64 md:border-b-0 md:border-r">
+      <aside className="w-full border-b border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:sticky md:top-0 md:h-screen md:w-64 md:shrink-0 md:overflow-y-auto md:border-b-0 md:border-r">
 
         {/* Branding */}
         <div className="mb-8 flex items-center gap-3">
@@ -111,7 +111,6 @@ function DriverLayout() {
             Manage your assigned emergencies and keep your ambulance location updated.
           </p>
         </div>
-
       </aside>
 
       {/* Main Content */}

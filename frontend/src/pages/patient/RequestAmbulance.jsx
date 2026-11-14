@@ -88,7 +88,6 @@ function RequestAmbulance() {
       })
 
       alert('Your ambulance request has been submitted successfully!')
-
       navigate('/patient/my-requests')
     } catch (err) {
       setError(
@@ -100,22 +99,34 @@ function RequestAmbulance() {
     }
   }
 
+  const inputClass =
+    'w-full rounded-xl border border-slate-300 bg-white p-3 text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-500 dark:focus:ring-blue-900/40'
+
+  const labelClass =
+    'mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300'
+
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-3xl text-slate-800 dark:text-slate-100">
+
       <div className="mb-6">
-        <h2 className="text-2xl font-bold">Request an Ambulance</h2>
-        <p className="mt-2 text-slate-400">
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+          Request an Ambulance
+        </h2>
+
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
           Provide your emergency details and pickup location.
         </p>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-6 rounded-xl border border-slate-700 bg-slate-900 p-6"
+        className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900"
       >
+
+        {/* Pickup Location */}
         <div>
-          <h3 className="mb-3 flex items-center gap-2 font-semibold">
-            <MapPin size={19} className="text-blue-400" />
+          <h3 className="mb-3 flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
+            <MapPin size={19} className="text-blue-600 dark:text-blue-400" />
             Pickup Location
           </h3>
 
@@ -123,7 +134,7 @@ function RequestAmbulance() {
             type="button"
             onClick={getCurrentLocation}
             disabled={loadingLocation}
-            className="mb-4 flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="mb-4 flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
           >
             {loadingLocation ? (
               <Loader2 size={17} className="animate-spin" />
@@ -138,9 +149,7 @@ function RequestAmbulance() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-2 block text-sm text-slate-300">
-                Latitude
-              </label>
+              <label className={labelClass}>Latitude</label>
 
               <input
                 type="number"
@@ -152,14 +161,12 @@ function RequestAmbulance() {
                 onChange={handleChange}
                 placeholder="e.g. 26.8467"
                 required
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white outline-none focus:border-blue-500"
+                className={inputClass}
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm text-slate-300">
-                Longitude
-              </label>
+              <label className={labelClass}>Longitude</label>
 
               <input
                 type="number"
@@ -171,18 +178,19 @@ function RequestAmbulance() {
                 onChange={handleChange}
                 placeholder="e.g. 80.9462"
                 required
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white outline-none focus:border-blue-500"
+                className={inputClass}
               />
             </div>
           </div>
 
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
             You can enter coordinates manually if GPS access is unavailable.
           </p>
         </div>
 
+        {/* Emergency Description */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-slate-300">
+          <label className={labelClass}>
             Emergency Description
           </label>
 
@@ -193,12 +201,13 @@ function RequestAmbulance() {
             placeholder="Describe your emergency..."
             rows={4}
             required
-            className="w-full resize-y rounded-lg border border-slate-700 bg-slate-800 p-3 text-white outline-none focus:border-blue-500"
+            className={`${inputClass} resize-y`}
           />
         </div>
 
+        {/* Contact Number */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-slate-300">
+          <label className={labelClass}>
             Contact Number
           </label>
 
@@ -209,25 +218,27 @@ function RequestAmbulance() {
             onChange={handleChange}
             placeholder="Enter your contact number"
             required
-            className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white outline-none focus:border-blue-500"
+            className={inputClass}
           />
         </div>
 
+        {/* Error */}
         {error && (
-          <p className="rounded-lg bg-red-900/30 p-3 text-sm text-red-400">
+          <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/30 dark:text-red-300">
             {error}
           </p>
         )}
 
+        {/* Submit */}
         <button
           type="submit"
           disabled={submitting || loadingLocation}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 p-3 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 p-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Ambulance size={19} />
-
           {submitting ? 'Submitting Request...' : 'Submit Emergency Request'}
         </button>
+
       </form>
     </div>
   )

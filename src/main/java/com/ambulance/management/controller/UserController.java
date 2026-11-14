@@ -3,18 +3,19 @@ package com.ambulance.management.controller;
 
 import com.ambulance.management.dto.RegisterRequest;
 import com.ambulance.management.dto.UserResponse;
+import com.ambulance.management.dto.DriverStatusUpdateRequest;
 import com.ambulance.management.entity.Role;
 import com.ambulance.management.entity.User;
 import com.ambulance.management.service.UserService;
 
 import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.access.prepost.PreAuthorize;
-import com.ambulance.management.dto.DriverStatusUpdateRequest;
-import com.ambulance.management.entity.DriverStatus;
+import com.ambulance.management.dto.DriverRegistrationRequest;
 
 import java.util.List;
 
@@ -46,12 +47,38 @@ public class UserController {
                 savedUser.getName(),
                 savedUser.getEmail(),
                 savedUser.getRole(),
-                savedUser.getDriverStatus()
+                savedUser.getDriverStatus(),
+                savedUser.getContactNumber()
         );
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
+    }
+
+    // Admin creates a new driver account
+    @PostMapping("/drivers")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> createDriver(
+            @Valid @RequestBody DriverRegistrationRequest request) {
+
+        User savedDriver = userService.createDriver(
+                request.getName(),
+                request.getEmail(),
+                request.getPassword(),
+                request.getContactNumber()
+        );
+
+        UserResponse response = new UserResponse(
+                savedDriver.getId(),
+                savedDriver.getName(),
+                savedDriver.getEmail(),
+                savedDriver.getRole(),
+                savedDriver.getDriverStatus(),
+                savedDriver.getContactNumber()
+        );
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/patient-test")
@@ -92,7 +119,8 @@ public class UserController {
                         user.getName(),
                         user.getEmail(),
                         user.getRole(),
-                        user.getDriverStatus()
+                        user.getDriverStatus(),
+                        user.getContactNumber()
                 ))
                 .toList();
 
@@ -115,10 +143,10 @@ public class UserController {
                 updatedDriver.getName(),
                 updatedDriver.getEmail(),
                 updatedDriver.getRole(),
-                updatedDriver.getDriverStatus()
+                updatedDriver.getDriverStatus(),
+                updatedDriver.getContactNumber()
         );
 
         return ResponseEntity.ok(response);
     }
-
 }

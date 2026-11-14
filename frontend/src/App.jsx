@@ -34,7 +34,11 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Public route */}
-        <Route path="/login" element={<Login />} />
+        {/* Public routes */}
+        <Route path="/login" element={<Navigate to="/login/patient" replace />} />
+        <Route path="/login/patient" element={<Login />} />
+        <Route path="/login/driver" element={<Login />} />
+        <Route path="/login/admin" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
         {/* Admin routes */}

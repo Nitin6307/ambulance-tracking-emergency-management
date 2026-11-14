@@ -12,6 +12,8 @@ const ambulanceApi = {
 
   getAllDrivers: () => api.get('/users/drivers'),
 
+  createDriver: (driverData) => api.post('/users/drivers', driverData),
+
   // Add new ambulance
   create: (ambulanceData) => api.post('/ambulances', ambulanceData),
 

@@ -117,8 +117,9 @@ function Ambulances() {
   ).length
 
   const assigned = ambulances.filter(
-    item => item.status !== 'AVAILABLE' &&
-            item.status !== 'OUT_OF_SERVICE'
+    item =>
+      item.status !== 'AVAILABLE' &&
+      item.status !== 'OUT_OF_SERVICE'
   ).length
 
   const outOfService = ambulances.filter(
@@ -126,11 +127,16 @@ function Ambulances() {
   ).length
 
   return (
-    <div>
+    <div className="text-slate-800 dark:text-slate-100">
+
+      {/* Page Header */}
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-2xl font-bold">Ambulance Management</h2>
-          <p className="mt-1 text-slate-400">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+            Ambulance Management
+          </h2>
+
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Manage and monitor all registered ambulances.
           </p>
         </div>
@@ -149,6 +155,7 @@ function Ambulances() {
         <Loader message="Loading ambulances..." />
       ) : (
         <>
+          {/* Statistics */}
           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               title="Total Ambulances"
@@ -160,26 +167,27 @@ function Ambulances() {
               title="Available"
               value={available}
               icon={CheckCircle}
-              iconColor="text-emerald-400"
+              iconColor="text-emerald-500"
             />
 
             <StatCard
               title="Assigned / Active"
               value={assigned}
               icon={Activity}
-              iconColor="text-orange-400"
+              iconColor="text-orange-500"
             />
 
             <StatCard
               title="Out of Service"
               value={outOfService}
               icon={AlertTriangle}
-              iconColor="text-red-400"
+              iconColor="text-red-500"
             />
           </div>
 
-          <section className="rounded-xl border border-slate-700 bg-slate-900 p-4">
-            <h3 className="mb-4 text-lg font-semibold">
+          {/* Ambulance Table */}
+          <section className="overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">
               Registered Ambulances
             </h3>
 
@@ -198,7 +206,7 @@ function Ambulances() {
         title="Add New Ambulance"
       >
         {ambulanceError && (
-          <p className="mb-4 text-sm text-red-400">
+          <p className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400">
             {ambulanceError}
           </p>
         )}
@@ -218,14 +226,18 @@ function Ambulances() {
       >
         {selectedAmbulance && (
           <div className="space-y-5">
-            <div className="rounded-lg bg-slate-800 p-4">
-              <p className="text-sm text-slate-400">
+
+            {/* Selected Ambulance */}
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Selected Ambulance
               </p>
-              <p className="mt-1 font-semibold text-white">
+
+              <p className="mt-1 font-semibold text-slate-900 dark:text-white">
                 {selectedAmbulance.ambulanceNumber}
               </p>
-              <p className="text-sm text-slate-300">
+
+              <p className="text-sm text-slate-600 dark:text-slate-300">
                 {selectedAmbulance.vehicleNumber}
               </p>
             </div>
@@ -233,21 +245,23 @@ function Ambulances() {
             {loadingDrivers ? (
               <Loader message="Loading drivers..." />
             ) : driverError ? (
-              <p className="text-sm text-red-400">{driverError}</p>
+              <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                {driverError}
+              </p>
             ) : drivers.length === 0 ? (
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 No registered drivers found.
               </p>
             ) : (
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-300">
+                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Select Driver
                 </label>
 
                 <select
                   value={selectedDriverId}
                   onChange={e => setSelectedDriverId(e.target.value)}
-                  className="w-full rounded-lg border border-slate-600 bg-slate-800 p-3 text-white outline-none focus:border-blue-500"
+                  className="w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-800 outline-none focus:border-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
                 >
                   <option value="">Choose a driver</option>
 
@@ -258,6 +272,12 @@ function Ambulances() {
                   ))}
                 </select>
               </div>
+            )}
+
+            {driverError && !loadingDrivers && drivers.length > 0 && (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {driverError}
+              </p>
             )}
 
             <div className="flex justify-end gap-3">
@@ -282,6 +302,7 @@ function Ambulances() {
           </div>
         )}
       </Modal>
+
     </div>
   )
 }

@@ -25,6 +25,9 @@ public class User {
     @Column(name = "driver_status")
     private DriverStatus driverStatus;
 
+    @Column(name = "contact_number", length = 15)
+    private String contactNumber;
+
     public User() {
     }
 
@@ -92,5 +95,13 @@ public class User {
 
     public void setDriverStatus(DriverStatus driverStatus) {
         this.driverStatus = driverStatus;
+    }
+
+    public String getContactNumber() {
+        return contactNumber;
+    }
+
+    public void setContactNumber(String contactNumber) {
+        this.contactNumber = contactNumber;
     }
 }

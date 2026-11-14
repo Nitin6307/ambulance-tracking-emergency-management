@@ -92,28 +92,28 @@ function PatientDashboard() {
   ]
 
   const colorStyles = {
-    blue: 'bg-blue-50 text-blue-600',
-    red: 'bg-red-50 text-red-600',
-    amber: 'bg-amber-50 text-amber-600',
-    green: 'bg-green-50 text-green-600',
+    blue: 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400',
+    red: 'bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400',
+    amber: 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400',
+    green: 'bg-green-50 text-green-600 dark:bg-green-950/50 dark:text-green-400',
   }
 
   return (
-    <div className="min-h-screen space-y-8 bg-slate-50 p-1 text-slate-800">
+    <div className="space-y-8 bg-slate-50 p-1 text-slate-800 transition-colors dark:bg-slate-950 dark:text-slate-100">
 
       {/* Welcome Header */}
       <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
         <div>
-          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-blue-600">
+          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400">
             <HeartPulse size={17} />
             Patient Overview
           </div>
 
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white sm:text-3xl">
             Welcome back, {patientName}!
           </h1>
 
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
             Manage your emergency requests and monitor ambulance services.
           </p>
         </div>
@@ -128,34 +128,34 @@ function PatientDashboard() {
       </div>
 
       {/* Patient Profile */}
-      <div className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-100 text-xl font-bold text-blue-700">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-100 text-xl font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-400">
             {initials || 'P'}
           </div>
 
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-xl font-bold text-slate-900">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                 {patientName}
               </h2>
 
-              <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+              <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700 dark:bg-green-950/50 dark:text-green-400">
                 PATIENT
               </span>
             </div>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               {patientEmail}
             </p>
 
-            <p className="mt-2 flex items-center gap-2 text-xs text-slate-400">
+            <p className="mt-2 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
               <UserRound size={14} />
               Registered Patient Account
             </p>
           </div>
 
-          <div className="flex items-center gap-2 rounded-xl bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+          <div className="flex items-center gap-2 rounded-xl bg-green-50 px-4 py-3 text-sm font-medium text-green-700 dark:bg-green-950/30 dark:text-green-400">
             <Activity size={17} />
             Account Active
           </div>
@@ -164,7 +164,7 @@ function PatientDashboard() {
 
       {/* Statistics */}
       <div>
-        <h2 className="mb-4 text-lg font-bold text-slate-900">
+        <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">
           Emergency Statistics
         </h2>
 
@@ -175,15 +175,15 @@ function PatientDashboard() {
             return (
               <div
                 key={stat.title}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-500">
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
                       {stat.title}
                     </p>
 
-                    <p className="mt-3 text-3xl font-bold text-slate-900">
+                    <p className="mt-3 text-3xl font-bold text-slate-900 dark:text-white">
                       {stat.value}
                     </p>
                   </div>
@@ -230,21 +230,21 @@ function PatientDashboard() {
       </div>
 
       {/* Request Summary */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               Your Emergency Requests
             </h2>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Overview of your ambulance request activity.
             </p>
           </div>
 
           <button
-            onClick={() => navigate('/patient/requests')}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800"
+            onClick={() => navigate('/patient/my-requests')}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
           >
             View All Requests
             <ArrowRight size={16} />
@@ -252,16 +252,16 @@ function PatientDashboard() {
         </div>
 
         {requests.length === 0 ? (
-          <div className="mt-6 rounded-xl bg-slate-50 px-4 py-10 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+          <div className="mt-6 rounded-xl bg-slate-50 px-4 py-10 text-center dark:bg-slate-800">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
               <Ambulance size={24} />
             </div>
 
-            <h3 className="font-semibold text-slate-800">
+            <h3 className="font-semibold text-slate-800 dark:text-white">
               No emergency requests yet
             </h3>
 
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               Your ambulance request activity will appear here.
             </p>
           </div>
@@ -270,24 +270,25 @@ function PatientDashboard() {
             {requests.slice(0, 5).map((request, index) => (
               <div
                 key={request.id || index}
-                className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4"
+                className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800"
               >
                 <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-blue-100 p-2 text-blue-600">
+                  <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
                     <Ambulance size={20} />
                   </div>
 
                   <div>
-                    <p className="font-semibold text-slate-800">
+                    <p className="font-semibold text-slate-800 dark:text-white">
                       Emergency Request
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">
+
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                       Request #{request.id || index + 1}
                     </p>
                   </div>
                 </div>
 
-                <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/60 dark:text-blue-400">
                   {request.status?.replaceAll('_', ' ') || 'UNKNOWN'}
                 </span>
               </div>

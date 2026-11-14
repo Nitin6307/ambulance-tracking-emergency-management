@@ -1,3 +1,4 @@
+
 function Input({
   label,
   type = 'text',
@@ -10,9 +11,11 @@ function Input({
 }) {
   return (
     <div className="w-full">
+
       {label && (
-        <label className="mb-2 block text-sm font-medium text-slate-300">
+        <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
           {label}
+          {required && <span className="ml-1 text-red-500">*</span>}
         </label>
       )}
 
@@ -24,8 +27,9 @@ function Input({
         placeholder={placeholder}
         required={required}
         disabled={disabled}
-        className="w-full rounded-lg border border-slate-700 bg-slate-800 p-3 text-white outline-none transition focus:border-blue-500 disabled:opacity-50"
+        className="w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:opacity-60 dark:disabled:bg-slate-900"
       />
+
     </div>
   )
 }
