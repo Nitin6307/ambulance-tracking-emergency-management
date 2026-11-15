@@ -100,12 +100,21 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<String> getCurrentUser(
+    public ResponseEntity<UserResponse> getCurrentUser(
             Authentication authentication) {
 
-        return ResponseEntity.ok(
-                "Authenticated user: " + authentication.getName()
+        User user = userService.getUserByEmail(authentication.getName());
+
+        UserResponse response = new UserResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole(),
+                user.getDriverStatus(),
+                user.getContactNumber()
         );
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/drivers")

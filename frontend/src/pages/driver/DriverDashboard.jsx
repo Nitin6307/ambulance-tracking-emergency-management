@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import ambulanceApi from '../../api/ambulanceApi'
 import {
   Ambulance,
   ClipboardList,
@@ -18,23 +19,29 @@ function DriverDashboard() {
 
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
+  const [driverProfile, setDriverProfile] = useState(null)
 
   const user = JSON.parse(sessionStorage.getItem('user') || '{}')
   const driverName = user.name || 'Driver'
 
   useEffect(() => {
-    async function fetchRequests() {
+    async function fetchDashboardData() {
       try {
-        const response = await emergencyApi.getDriverRequests()
-        setRequests(response.data)
+        const [requestsResponse, profileResponse] = await Promise.all([
+          emergencyApi.getDriverRequests(),
+          ambulanceApi.getCurrentUser(),
+        ])
+
+        setRequests(requestsResponse.data)
+        setDriverProfile(profileResponse.data)
       } catch (error) {
-        console.error('Unable to load driver requests:', error)
+        console.error('Unable to load driver dashboard:', error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchRequests()
+    fetchDashboardData()
   }, [])
 
   if (loading) {
@@ -118,6 +125,34 @@ function DriverDashboard() {
           View Assignments
           <ArrowRight size={17} />
         </button>
+      </div>
+
+
+      {/* Driver Availability Status */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+          Your Availability Status
+        </p>
+
+        <div className="mt-3 flex items-center gap-3">
+          <span
+            className={`h-3 w-3 rounded-full ${
+              driverProfile?.driverStatus === 'AVAILABLE'
+                ? 'bg-green-500'
+                : driverProfile?.driverStatus === 'OFF_DUTY'
+                  ? 'bg-slate-400'
+                  : 'bg-blue-500'
+            }`}
+          />
+
+          <span className="text-xl font-bold text-slate-900 dark:text-white">
+            {driverProfile?.driverStatus?.replaceAll('_', ' ') || 'Unknown'}
+          </span>
+        </div>
+
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          Current availability recorded in your account.
+        </p>
       </div>
 
       {/* Statistics */}

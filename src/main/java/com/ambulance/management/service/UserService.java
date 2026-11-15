@@ -105,4 +105,10 @@ public class UserService {
 
         return userRepository.save(driver);
     }
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+
 }
