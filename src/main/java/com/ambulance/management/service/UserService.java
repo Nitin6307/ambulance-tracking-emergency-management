@@ -9,6 +9,18 @@ import com.ambulance.management.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.ambulance.management.entity.Ambulance;
+import com.ambulance.management.entity.AmbulanceStatus;
+import com.ambulance.management.entity.EmergencyRequest;
+import com.ambulance.management.entity.EmergencyStatus;
+
+import com.ambulance.management.repository.AmbulanceRepository;
+import com.ambulance.management.repository.EmergencyRequestRepository;
+
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
 import java.util.List;
 
 @Service
@@ -16,13 +28,19 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AmbulanceRepository ambulanceRepository;
+    private final EmergencyRequestRepository emergencyRequestRepository;
 
     public UserService(
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            AmbulanceRepository ambulanceRepository,
+            EmergencyRequestRepository emergencyRequestRepository) {
 
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.ambulanceRepository = ambulanceRepository;
+        this.emergencyRequestRepository = emergencyRequestRepository;
     }
 
     public User registerUser(User user) {
@@ -105,6 +123,86 @@ public class UserService {
 
         return userRepository.save(driver);
     }
+
+    @Transactional
+    public void deleteDriver(Long driverId) {
+
+        User driver = getUserById(driverId);
+
+        // Verify that the user is a driver
+        if (driver.getRole() != Role.DRIVER) {
+            throw new IllegalArgumentException(
+                    "User is not a driver");
+        }
+
+        // Prevent deletion during an active emergency
+        List<EmergencyStatus> activeStatuses = List.of(
+                EmergencyStatus.PENDING,
+                EmergencyStatus.ACCEPTED,
+                EmergencyStatus.AMBULANCE_ASSIGNED,
+                EmergencyStatus.DRIVER_ASSIGNED,
+                EmergencyStatus.ON_THE_WAY,
+                EmergencyStatus.PATIENT_PICKED_UP,
+                EmergencyStatus.AT_HOSPITAL,
+                EmergencyStatus.AT_PATIENT_LOCATION
+        );
+
+        List<EmergencyRequest> activeRequests =
+                emergencyRequestRepository
+                        .findByAssignedDriverAndStatusIn(
+                                driver, activeStatuses);
+
+        if (!activeRequests.isEmpty()) {
+            throw new IllegalStateException(
+                    "Cannot delete driver. Driver has an active emergency.");
+        }
+
+        // Find ambulances assigned to this driver
+        List<Ambulance> ambulances =
+                ambulanceRepository.findByDriver(driver);
+
+        for (Ambulance ambulance : ambulances) {
+
+            AmbulanceStatus status = ambulance.getStatus();
+
+            if (status == AmbulanceStatus.ASSIGNED
+                    || status == AmbulanceStatus.ON_THE_WAY
+                    || status == AmbulanceStatus.AT_PATIENT_LOCATION
+                    || status == AmbulanceStatus.TRANSPORTING_PATIENT) {
+
+                throw new IllegalStateException(
+                        "Cannot delete driver. Assigned ambulance is currently active.");
+            }
+        }
+
+        // Preserve driver details in historical emergency records
+        List<EmergencyRequest> historicalRequests =
+                emergencyRequestRepository.findByAssignedDriver(driver);
+
+        for (EmergencyRequest request : historicalRequests) {
+
+            request.setAssignedDriverName(driver.getName());
+            request.setAssignedDriverEmail(driver.getEmail());
+            request.setAssignedDriverContact(driver.getContactNumber());
+
+            // Clear the foreign-key relationship.
+            // Snapshot fields remain unchanged.
+            request.setAssignedDriver(null);
+        }
+
+        emergencyRequestRepository.saveAll(historicalRequests);
+
+        // Unassign driver from ambulances
+        for (Ambulance ambulance : ambulances) {
+            ambulance.setDriver(null);
+        }
+
+        ambulanceRepository.saveAll(ambulances);
+
+        // Permanently delete driver account
+        userRepository.delete(driver);
+    }
+
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));

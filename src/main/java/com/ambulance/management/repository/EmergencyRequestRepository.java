@@ -26,5 +26,12 @@ public interface EmergencyRequestRepository
             User patient,
             EmergencyStatus status);
 
+    List<EmergencyRequest> findByAssignedDriver(User assignedDriver);
+
+    List<EmergencyRequest> findByAssignedDriverAndStatusIn(
+            User assignedDriver,
+            Collection<EmergencyStatus> statuses
+    );
+
 
 }

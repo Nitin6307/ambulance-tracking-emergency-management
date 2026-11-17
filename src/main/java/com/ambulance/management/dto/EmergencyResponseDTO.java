@@ -29,6 +29,10 @@ public class EmergencyResponseDTO {
 
     private Long ambulanceId;
 
+    private String assignedDriverName;
+    private String assignedDriverEmail;
+    private String assignedDriverContact;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -52,6 +56,30 @@ public class EmergencyResponseDTO {
 
         if (request.getAmbulance() != null) {
             this.ambulanceId = request.getAmbulance().getId();
+        }
+
+        // Preserve historical driver information
+        this.assignedDriverName = request.getAssignedDriverName();
+        this.assignedDriverEmail = request.getAssignedDriverEmail();
+        this.assignedDriverContact = request.getAssignedDriverContact();
+
+        // Fallback for older records that don't have snapshot data
+        if (request.getAssignedDriver() != null) {
+
+            if (this.assignedDriverName == null) {
+                this.assignedDriverName =
+                        request.getAssignedDriver().getName();
+            }
+
+            if (this.assignedDriverEmail == null) {
+                this.assignedDriverEmail =
+                        request.getAssignedDriver().getEmail();
+            }
+
+            if (this.assignedDriverContact == null) {
+                this.assignedDriverContact =
+                        request.getAssignedDriver().getContactNumber();
+            }
         }
 
         this.createdAt = request.getCreatedAt();

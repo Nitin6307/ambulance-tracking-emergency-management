@@ -51,6 +51,15 @@ public class EmergencyRequest {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "assigned_driver_name")
+    private String assignedDriverName;
+
+    @Column(name = "assigned_driver_email")
+    private String assignedDriverEmail;
+
+    @Column(name = "assigned_driver_contact")
+    private String assignedDriverContact;
+
     private LocalDateTime updatedAt;
 
     @PrePersist
@@ -65,5 +74,15 @@ public class EmergencyRequest {
     }
 
     public EmergencyRequest() {
+    }
+
+    public void setAssignedDriver(User assignedDriver) {
+        this.assignedDriver = assignedDriver;
+
+        if (assignedDriver != null) {
+            this.assignedDriverName = assignedDriver.getName();
+            this.assignedDriverEmail = assignedDriver.getEmail();
+            this.assignedDriverContact = assignedDriver.getContactNumber();
+        }
     }
 }

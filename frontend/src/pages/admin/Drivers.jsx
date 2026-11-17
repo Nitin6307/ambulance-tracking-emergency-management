@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react'
 import {
-  Users, Mail, Phone, UserCheck, Clock, UserX, Plus, UserPlus
+  Users, Mail, Phone, UserCheck, Clock, UserX, Plus, UserPlus, Trash2
 } from 'lucide-react'
 
 import ambulanceApi from '../../api/ambulanceApi'
@@ -13,6 +13,7 @@ function Drivers() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [updatingId, setUpdatingId] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
   const [creating, setCreating] = useState(false)
   const [showForm, setShowForm] = useState(false)
 
@@ -135,6 +136,37 @@ function Drivers() {
       )
     } finally {
       setUpdatingId(null)
+    }
+  }
+
+  async function handleDeleteDriver(driver) {
+    const confirmed = window.confirm(
+      `Are you sure you want to permanently delete ${driver.name}?\n\nHistorical emergency records will be preserved. This action cannot be undone.`
+    )
+
+    if (!confirmed) return
+
+    setDeletingId(driver.id)
+    setError('')
+    setSuccess('')
+
+    try {
+      await ambulanceApi.deleteDriver(driver.id)
+
+      setDrivers(previous =>
+        previous.filter(item => item.id !== driver.id)
+      )
+
+      setSuccess(`Driver ${driver.name} deleted successfully.`)
+    } catch (err) {
+      console.error(err)
+
+      setError(
+        err.response?.data?.message ||
+        'Unable to delete driver. The driver may have an active emergency.'
+      )
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -430,42 +462,44 @@ function Drivers() {
                       </td>
 
                       <td className="p-4">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                            statusStyles[driver.driverStatus] ||
-                            'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
-                          }`}
-                        >
-                          {getStatusLabel(driver.driverStatus)}
-                        </span>
-                      </td>
+                        <div className="flex items-center gap-2">
 
-                      <td className="p-4">
-                        {canChangeStatus ? (
+                          {canChangeStatus ? (
+                            <button
+                              onClick={() => handleStatusChange(driver)}
+                              disabled={updatingId !== null || deletingId !== null}
+                              className={`rounded-lg px-3 py-2 text-xs font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                                driver.driverStatus === 'AVAILABLE'
+                                  ? 'bg-red-600 hover:bg-red-700'
+                                  : 'bg-green-600 hover:bg-green-700'
+                              }`}
+                            >
+                              {updatingId === driver.id
+                                ? 'Updating...'
+                                : driver.driverStatus === 'AVAILABLE'
+                                  ? 'Set Off Duty'
+                                  : 'Set Available'}
+                            </button>
+                          ) : (
+                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                              {driver.driverStatus === 'ON_DUTY'
+                                ? 'Emergency in progress'
+                                : driver.driverStatus === 'ASSIGNED'
+                                  ? 'Ambulance assigned'
+                                  : 'Unavailable'}
+                            </span>
+                          )}
+
                           <button
-                            onClick={() => handleStatusChange(driver)}
-                            disabled={updatingId !== null}
-                            className={`rounded-lg px-3 py-2 text-xs font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                              driver.driverStatus === 'AVAILABLE'
-                                ? 'bg-red-600 hover:bg-red-700'
-                                : 'bg-green-600 hover:bg-green-700'
-                            }`}
+                            onClick={() => handleDeleteDriver(driver)}
+                            disabled={deletingId !== null || updatingId !== null}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            {updatingId === driver.id
-                              ? 'Updating...'
-                              : driver.driverStatus === 'AVAILABLE'
-                                ? 'Set Off Duty'
-                                : 'Set Available'}
+                            <Trash2 size={14} />
+                            {deletingId === driver.id ? 'Deleting...' : 'Delete'}
                           </button>
-                        ) : (
-                          <span className="text-xs text-slate-500 dark:text-slate-400">
-                            {driver.driverStatus === 'ON_DUTY'
-                              ? 'Emergency in progress'
-                              : driver.driverStatus === 'ASSIGNED'
-                                ? 'Ambulance assigned'
-                                : 'Unavailable'}
-                          </span>
-                        )}
+
+                        </div>
                       </td>
                     </tr>
                   )

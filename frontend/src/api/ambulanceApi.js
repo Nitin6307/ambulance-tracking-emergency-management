@@ -37,6 +37,9 @@ const ambulanceApi = {
 
     updateDriverStatus: (driverId, statusData) =>
       api.put(`/users/drivers/${driverId}/status`, statusData),
+
+      deleteDriver: (driverId) =>
+        api.delete(`/users/drivers/${driverId}`),
 }
 
 export default ambulanceApi

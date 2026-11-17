@@ -158,4 +158,15 @@ public class UserController {
 
         return ResponseEntity.ok(response);
     }
+
+    // Admin permanently deletes a driver account
+    @DeleteMapping("/drivers/{driverId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteDriver(
+            @PathVariable Long driverId) {
+
+        userService.deleteDriver(driverId);
+
+        return ResponseEntity.noContent().build();
+    }
 }
