@@ -176,5 +176,16 @@ public class AmbulanceController {
         return ResponseEntity.ok(new AmbulanceResponse(updated));
     }
 
+    // ADMIN: Permanently delete an ambulance
+    @DeleteMapping("/{ambulanceId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> deleteAmbulance(
+            @PathVariable Long ambulanceId) {
+
+        ambulanceService.deleteAmbulance(ambulanceId);
+
+        return ResponseEntity.ok("Ambulance deleted successfully.");
+    }
+
 
 }

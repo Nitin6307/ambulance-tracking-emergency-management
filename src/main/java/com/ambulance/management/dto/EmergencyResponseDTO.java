@@ -28,6 +28,8 @@ public class EmergencyResponseDTO {
     private EmergencyStatus status;
 
     private Long ambulanceId;
+    private String assignedAmbulanceNumber;
+    private String assignedVehicleNumber;
 
     private String assignedDriverName;
     private String assignedDriverEmail;
@@ -39,6 +41,9 @@ public class EmergencyResponseDTO {
     public EmergencyResponseDTO(EmergencyRequest request) {
 
         this.id = request.getId();
+        // Preserve historical ambulance information
+        this.assignedAmbulanceNumber = request.getAssignedAmbulanceNumber();
+        this.assignedVehicleNumber = request.getAssignedVehicleNumber();
 
         if (request.getPatient() != null) {
             this.patientId = request.getPatient().getId();

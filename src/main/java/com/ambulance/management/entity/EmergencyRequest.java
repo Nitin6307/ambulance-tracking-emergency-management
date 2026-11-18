@@ -42,6 +42,13 @@ public class EmergencyRequest {
     @JoinColumn(name = "ambulance_id")
     private Ambulance ambulance;
 
+    // Preserves ambulance details for historical emergency records
+    @Column(name = "assigned_ambulance_number")
+    private String assignedAmbulanceNumber;
+
+    @Column(name = "assigned_vehicle_number")
+    private String assignedVehicleNumber;
+
     // Preserves the driver assigned to this emergency
     // even after the ambulance is released.
     @ManyToOne(fetch = FetchType.LAZY)
@@ -83,6 +90,15 @@ public class EmergencyRequest {
             this.assignedDriverName = assignedDriver.getName();
             this.assignedDriverEmail = assignedDriver.getEmail();
             this.assignedDriverContact = assignedDriver.getContactNumber();
+        }
+    }
+
+    public void setAmbulance(Ambulance ambulance) {
+        this.ambulance = ambulance;
+
+        if (ambulance != null) {
+            this.assignedAmbulanceNumber = ambulance.getAmbulanceNumber();
+            this.assignedVehicleNumber = ambulance.getVehicleNumber();
         }
     }
 }

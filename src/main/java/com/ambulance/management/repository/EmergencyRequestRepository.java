@@ -4,6 +4,7 @@ package com.ambulance.management.repository;
 import com.ambulance.management.entity.EmergencyRequest;
 import com.ambulance.management.entity.EmergencyStatus;
 import com.ambulance.management.entity.User;
+import com.ambulance.management.entity.Ambulance;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -27,6 +28,9 @@ public interface EmergencyRequestRepository
             EmergencyStatus status);
 
     List<EmergencyRequest> findByAssignedDriver(User assignedDriver);
+
+    // Find all emergency records associated with an ambulance
+    List<EmergencyRequest> findByAmbulance(Ambulance ambulance);
 
     List<EmergencyRequest> findByAssignedDriverAndStatusIn(
             User assignedDriver,

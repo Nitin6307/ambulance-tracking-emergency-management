@@ -8,6 +8,9 @@ import com.ambulance.management.entity.Role;
 import com.ambulance.management.entity.User;
 import com.ambulance.management.repository.AmbulanceRepository;
 import com.ambulance.management.repository.UserRepository;
+import com.ambulance.management.entity.EmergencyRequest;
+import com.ambulance.management.entity.EmergencyStatus;
+import com.ambulance.management.repository.EmergencyRequestRepository;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -21,12 +24,15 @@ public class AmbulanceService {
 
     private final AmbulanceRepository ambulanceRepository;
     private final UserRepository userRepository;
+    private final EmergencyRequestRepository emergencyRequestRepository;
 
     public AmbulanceService(
             AmbulanceRepository ambulanceRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            EmergencyRequestRepository emergencyRequestRepository) {
         this.ambulanceRepository = ambulanceRepository;
         this.userRepository = userRepository;
+        this.emergencyRequestRepository = emergencyRequestRepository;
     }
 
     // 1. Create a new ambulance
@@ -64,6 +70,70 @@ public class AmbulanceService {
                 .orElseThrow(() ->
                         new IllegalArgumentException(
                                 "Ambulance not found with ID: " + id));
+    }
+
+    @Transactional
+    public void deleteAmbulance(Long ambulanceId) {
+
+        Ambulance ambulance = getAmbulanceById(ambulanceId);
+
+        List<EmergencyStatus> activeStatuses = List.of(
+                EmergencyStatus.PENDING,
+                EmergencyStatus.ACCEPTED,
+                EmergencyStatus.AMBULANCE_ASSIGNED,
+                EmergencyStatus.DRIVER_ASSIGNED,
+                EmergencyStatus.ON_THE_WAY,
+                EmergencyStatus.PATIENT_PICKED_UP,
+                EmergencyStatus.AT_HOSPITAL,
+                EmergencyStatus.AT_PATIENT_LOCATION
+        );
+
+        List<EmergencyRequest> linkedRequests =
+                emergencyRequestRepository.findByAmbulance(ambulance);
+
+        boolean hasActiveRequest = linkedRequests.stream()
+                .anyMatch(request -> activeStatuses.contains(request.getStatus()));
+
+        if (hasActiveRequest) {
+            throw new IllegalStateException(
+                    "Cannot delete ambulance because it has an active emergency."
+            );
+        }
+
+        AmbulanceStatus status = ambulance.getStatus();
+
+        if (status == AmbulanceStatus.ASSIGNED
+                || status == AmbulanceStatus.ON_THE_WAY
+                || status == AmbulanceStatus.AT_PATIENT_LOCATION
+                || status == AmbulanceStatus.TRANSPORTING_PATIENT) {
+
+            throw new IllegalStateException(
+                    "Cannot delete an ambulance that is currently active."
+            );
+        }
+
+        // Preserve ambulance details in historical emergency records
+        for (EmergencyRequest request : linkedRequests) {
+            request.setAssignedAmbulanceNumber(ambulance.getAmbulanceNumber());
+            request.setAssignedVehicleNumber(ambulance.getVehicleNumber());
+            request.setAmbulance(null);
+        }
+
+        emergencyRequestRepository.saveAllAndFlush(linkedRequests);
+
+        // Safely release the driver without changing OFF_DUTY status
+        User driver = ambulance.getDriver();
+
+        if (driver != null) {
+            if (driver.getDriverStatus() == DriverStatus.ASSIGNED) {
+                driver.setDriverStatus(DriverStatus.AVAILABLE);
+                userRepository.save(driver);
+            }
+
+            ambulance.setDriver(null);
+        }
+
+        ambulanceRepository.delete(ambulance);
     }
 
     // 4. Get available ambulances
