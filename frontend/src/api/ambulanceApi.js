@@ -40,6 +40,9 @@ const ambulanceApi = {
 
       deleteDriver: (driverId) =>
         api.delete(`/users/drivers/${driverId}`),
+
+      deleteAmbulance: (ambulanceId) =>
+        api.delete(`/ambulances/${ambulanceId}`),
 }
 
 export default ambulanceApi

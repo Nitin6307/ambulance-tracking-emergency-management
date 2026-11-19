@@ -21,6 +21,7 @@ import {
 function Ambulances() {
   const [ambulances, setAmbulances] = useState([])
   const [loading, setLoading] = useState(true)
+  const [deletingAmbulanceId, setDeletingAmbulanceId] = useState(null)
 
   const [showAmbulanceModal, setShowAmbulanceModal] = useState(false)
   const [addingAmbulance, setAddingAmbulance] = useState(false)
@@ -65,6 +66,33 @@ function Ambulances() {
       setAddingAmbulance(false)
     }
   }
+
+  async function handleDeleteAmbulance(ambulanceItem) {
+    const confirmed = window.confirm(
+      `Are you sure you want to permanently delete ${ambulanceItem.ambulanceNumber} (${ambulanceItem.vehicleNumber})?\n\nHistorical emergency records will be preserved.`
+    )
+
+    if (!confirmed) return
+
+    setDeletingAmbulanceId(ambulanceItem.id)
+
+    try {
+      await ambulanceApi.deleteAmbulance(ambulanceItem.id)
+
+      await fetchAmbulances()
+
+      window.alert('Ambulance deleted successfully.')
+    } catch (error) {
+      window.alert(
+        error.response?.data?.message ||
+        'Unable to delete ambulance. It may be associated with an active emergency.'
+      )
+    } finally {
+      setDeletingAmbulanceId(null)
+    }
+  }
+
+
 
   async function handleOpenAssignModal(ambulanceItem) {
     setSelectedAmbulance(ambulanceItem)
@@ -194,6 +222,8 @@ function Ambulances() {
             <AmbulanceTable
               ambulances={ambulances}
               onAssignDriver={handleOpenAssignModal}
+              onDeleteAmbulance={handleDeleteAmbulance}
+              deletingAmbulanceId={deletingAmbulanceId}
             />
           </section>
         </>
